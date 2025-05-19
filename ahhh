@@ -1,0 +1,39 @@
+import win32com.client
+import pandas as pd
+
+# Conexión con Outlook
+outlook = win32com.client.Dispatch("Outlook.Application").GetNamespace("MAPI")
+
+# Lista para guardar los datos de los correos
+emails_data = []
+
+# Recorrer todas las maileras vinculadas
+for i in range(outlook.Folders.Count):
+    mailbox = outlook.Folders.Item(i + 1)
+    inbox = mailbox.Folders["Inbox"]
+    
+    # Limita la cantidad de mails a revisar (puedes ajustar o quitar este límite)
+    messages = inbox.Items
+    messages.Sort("[ReceivedTime]", True)  # Ordena por fecha descendente
+
+    for message in messages:
+        try:
+            subject = message.Subject
+            sender = message.SenderName
+            to = message.To
+            received = message.ReceivedTime
+            emails_data.append({
+                "Subject": subject,
+                "From": sender,
+                "To": to,
+                "ReceivedTime": received,
+                "Mailbox": mailbox.Name
+            })
+        except Exception as e:
+            continue  # Omite errores, como si es un ítem que no es mail
+
+# Guardar en Excel
+df = pd.DataFrame(emails_data)
+df.to_excel("emails_outlook.xlsx", index=False)
+
+print("Extracción completada. Archivo guardado como 'emails_outlook.xlsx'.")
